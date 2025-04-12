@@ -1,0 +1,339 @@
+/* General Styles */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f6f8;
+    color: #333;
+}
+
+.container {
+    width: 100%;
+    height: 100vh;
+}
+
+/* Login Section */
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.login-card {
+    background: #fff;
+    padding: 2rem 3rem;
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    width: 100%;
+}
+
+.login-header h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+.login-header p {
+    margin: 0;
+    color: #777;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn.primary {
+    background-color: #2e86de;
+    color: white;
+}
+
+.btn.secondary {
+    background-color: #ced6e0;
+    color: #2f3542;
+}
+
+.btn.logout {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.error-message {
+    margin-top: 0.8rem;
+    color: #e74c3c;
+}
+
+/* Admin Dashboard */
+#dashboard-section {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2e86de;
+    padding: 1rem 2rem;
+    color: white;
+}
+
+.dashboard-container {
+    display: flex;
+    flex-grow: 1;
+}
+
+.sidebar {
+    width: 220px;
+    background-color: #34495e;
+    padding: 1rem;
+    color: white;
+}
+
+.sidebar nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar nav ul li {
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.sidebar nav ul li:hover,
+.sidebar nav ul li.active {
+    background-color: #2e86de;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    background-color: #f9fbfc;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.filters {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group label {
+    margin-right: 0.4rem;
+    font-weight: 600;
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+/* Complaints Table */
+.complaints-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+
+.complaints-table th,
+.complaints-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.complaints-table th {
+    background-color: #f1f2f6;
+    font-weight: 600;
+}
+
+/* Status styles */
+.status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background-color: #f39c12;
+    color: white;
+}
+
+.status-in-progress {
+    background-color: #2980b9;
+    color: white;
+}
+
+.status-resolved {
+    background-color: #27ae60;
+    color: white;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.close {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #7f8c8d;
+}
+
+.close:hover {
+    color: #2c3e50;
+}
+
+/* Chart styles */
+.chart {
+    height: 300px;
+    margin-top: 1rem;
+}
+
+.chart-card {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.chart-card h3 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+/* Active button state */
+.view-btn.active {
+    background-color: #2e86de;
+    color: white;
+}
+
+/* Reports & Cards */
+.stats-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 12px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-right: 1rem;
+}
+
+.stat-icon.pending {
+    color: #f39c12;
+}
+
+.stat-icon.progress {
+    color: #2980b9;
+}
+
+.stat-icon.resolved {
+    color: #27ae60;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .filters {
+        flex-direction: column;
+    }
+
+    .filter-group {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 1rem;
+    }
+
+    .stats-row {
+        flex-direction: column;
+    }
+
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+}
