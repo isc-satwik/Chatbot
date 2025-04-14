@@ -531,3 +531,4 @@ function searchComplaints(searchTerm) {
             console.error('Error loading complaints:', error);
         });
 }
+>>>>>>> origin/main
