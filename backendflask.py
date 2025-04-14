@@ -1,8 +1,6 @@
-
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,session
 from flask_cors import CORS
 import mysql.connector
-import openai
 import base64
 import os
 import uuid
@@ -19,19 +17,28 @@ import google.generativeai as genai
 
 
 app = Flask(__name__)
+app.secret_key = 'grievance_chatbot_secret_key'  # Single secret key
 
-# ✅ Allow ALL origins, methods, and headers
-CORS(app, resources={r"/*": {"origins": "*"}})
+# Configure session
+app.config['SESSION_COOKIE_SECURE'] = False  # Changed to False for HTTP
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Changed back to Lax for HTTP
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow cross-domain cookies
 
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    return response
-
-
-app.secret_key = "grievance_chatbot_secret_key"
+# Configure CORS with specific settings
+CORS(app, 
+    supports_credentials=True,
+    resources={
+        r"/*": {
+            "origins": ["http://127.0.0.1:5500", "http://localhost:5500"],
+            "allow_headers": ["Content-Type"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "supports_credentials": True,
+            "expose_headers": ["Content-Type"]
+        }
+    }
+)
 
 # Database Configuration
 db_config = {
@@ -42,10 +49,9 @@ db_config = {
 }
 
 # OpenAI Configuration
-#openai.api_key = "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"
-# Load CLIP model for image verification
 genai.configure(api_key="AIzaSyBdKeckdj2w7tFj2Ue53N8XNJRW2RhhvqY")
 
+# Load CLIP model for image verification
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
 
@@ -129,8 +135,8 @@ init_db()
 # Helper function to classify complaint using GPT
 def classify_complaint(complaint_text):
     model = genai.GenerativeModel("gemini-1.5-pro-latest")
-    
-    prompt = """You are a complaint classification system. 
+
+    prompt = """You are a complaint classification system who can classify complaints for government and doesn't take personal complaints from users. 
     Classify the following complaint into one of these departments: 
     Electrical, IT, Maintenance, Civil, Security, HR, Finance, Administration. 
     Just return the department name without any explanation."""
@@ -348,8 +354,22 @@ def admin_login():
     conn.close()
     
     if admin:
+        # Clear any existing session
+        session.clear()
+        
+        # Set session data
         session['admin_id'] = admin['id']
-        return jsonify({"success": True, "admin": admin})
+        session['admin_username'] = admin['username']
+        session['department_id'] = admin['department_id']
+        session.permanent = True  # Make session permanent
+        
+        response = jsonify({
+            "success": True, 
+            "admin": admin,
+            "message": "Login successful"
+        })
+        
+        return response
     else:
         return jsonify({
             "success": False,
@@ -453,28 +473,25 @@ def update_complaint_status():
     })
 
 # Route to get departments
-@app.route('/api/departments', methods=['GET'])
+@app.route('/api/admin/departments', methods=['GET'])
 def get_departments():
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor(dictionary=True)
-    
-    cursor.execute("SELECT id, name FROM departments")
-    departments = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return jsonify({"success": True, "departments": departments})
+    if 'admin_id' not in session:
+        return jsonify({"success": False, "message": "Please login first"})
 
-@app.after_request
-def add_cors_headers(response):
-    if response is None:
-        return jsonify({"error": "Internal Server Error"}), 500  # ✅ Ensure response is not None
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
 
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    return response
+        cursor.execute("SELECT id, name FROM departments")
+        departments = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({"success": True, "departments": departments})
+    except Exception as e:
+        print("Error fetching departments:", str(e))
+        return jsonify({"success": False, "message": "Internal Server Error"})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
