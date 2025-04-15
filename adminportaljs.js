@@ -50,16 +50,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const departmentFilter = document.getElementById('filter-department');
     if (departmentFilter) {
         departmentFilter.addEventListener('change', function() {
-            const department = this.value;
-            filterComplaintsByDepartment(department);
+            filterComplaintsByDepartment(this.value);
         });
     }
 
     const statusFilter = document.getElementById('filter-status');
     if (statusFilter) {
         statusFilter.addEventListener('change', function() {
-            const status = this.value;
-            filterComplaintsByStatus(status);
+            filterComplaintsByStatus(this.value);
         });
     }
 
@@ -196,105 +194,109 @@ function loadDepartments() {
 
 // Update reports and charts
 function updateReports() {
-    fetch('http://localhost:5000/api/admin/complaints',{
-        credentials: 'include', // Include cookies in the request  
+    fetch('http://localhost:5000/api/admin/complaints', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const complaints = data.complaints;
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const complaints = data.complaints;
+            
+            // Count complaints by status
+            let pending = 0, inProgress = 0, resolved = 0;
+            complaints.forEach(complaint => {
+                if (complaint.status === 'Pending') pending++;
+                else if (complaint.status === 'In Progress') inProgress++;
+                else if (complaint.status === 'Resolved') resolved++;
+            });
+            
+            // Update statistic counts
+            document.getElementById('stat-total').textContent = complaints.length;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-progress').textContent = inProgress;
+            document.getElementById('stat-resolved').textContent = resolved;
+            
+            // Create charts if Chart.js is loaded
+            if (typeof Chart !== 'undefined') {
+                // Count complaints by department
+                const deptCounts = {};
+                const deptLabels = [];
+                const deptData = [];
+                const deptColors = [
+                    '#3498db', '#2ecc71', '#e74c3c', 
+                    '#f39c12', '#9b59b6', '#1abc9c'
+                ];
                 
-                // Count complaints by status
-                let pending = 0, inProgress = 0, resolved = 0;
                 complaints.forEach(complaint => {
-                    if (complaint.status === 'Pending') pending++;
-                    else if (complaint.status === 'In Progress') inProgress++;
-                    else if (complaint.status === 'Resolved') resolved++;
+                    deptCounts[complaint.department] = (deptCounts[complaint.department] || 0) + 1;
                 });
                 
-                // Update statistic counts
-                document.getElementById('stat-total').textContent = complaints.length;
-                document.getElementById('stat-pending').textContent = pending;
-                document.getElementById('stat-progress').textContent = inProgress;
-                document.getElementById('stat-resolved').textContent = resolved;
+                for (const dept in deptCounts) {
+                    deptLabels.push(dept);
+                    deptData.push(deptCounts[dept]);
+                }
                 
-                // Create charts if Chart.js is loaded
-                if (typeof Chart !== 'undefined') {
-                    // Count complaints by department
-                    const deptCounts = {};
-                    const deptLabels = [];
-                    const deptData = [];
-                    const deptColors = [
-                        '#3498db', '#2ecc71', '#e74c3c', 
-                        '#f39c12', '#9b59b6', '#1abc9c'
-                    ];
-                    
-                    complaints.forEach(complaint => {
-                        deptCounts[complaint.department] = (deptCounts[complaint.department] || 0) + 1;
-                    });
-                    
-                    for (const dept in deptCounts) {
-                        deptLabels.push(dept);
-                        deptData.push(deptCounts[dept]);
-                    }
-                    
-                    // Department chart
-                    const deptChart = document.getElementById('dept-chart');
-                    deptChart.innerHTML = '';
-                    const deptCtx = document.createElement('canvas');
-                    deptChart.appendChild(deptCtx);
-                    
-                    new Chart(deptCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: deptLabels,
-                            datasets: [{
-                                label: 'Complaints by Department',
-                                data: deptData,
-                                backgroundColor: deptColors.slice(0, deptLabels.length)
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                y: {
-                                    beginAtZero: true
-                                }
+                // Department chart
+                const deptChart = document.getElementById('dept-chart');
+                deptChart.innerHTML = '';
+                const deptCtx = document.createElement('canvas');
+                deptChart.appendChild(deptCtx);
+                
+                new Chart(deptCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: deptLabels,
+                        datasets: [{
+                            label: 'Complaints by Department',
+                            data: deptData,
+                            backgroundColor: deptColors.slice(0, deptLabels.length)
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
                             }
                         }
-                    });
-                    
-                    // Status chart
-                    const statusChart = document.getElementById('status-chart');
-                    statusChart.innerHTML = '';
-                    const statusCtx = document.createElement('canvas');
+                    }
+                });
+                
+                // Status chart
+                const statusChart = document.getElementById('status-chart');
+                statusChart.innerHTML = '';
+                const statusCtx = document.createElement('canvas');
 
-                    // Set the width and height of the canvas to half the current size
-                    statusCtx.width = 300; // 300ust a300usted (current size divided by 2)
-                    statusCtx.height = 300; // 300ust a300usted (current size divided by 2)
+                // Set the width and height of the canvas to half the current size
+                statusCtx.width = 300; // 300ust a300usted (current size divided by 2)
+                statusCtx.height = 300; // 300ust a300usted (current size divided by 2)
 
-                    statusChart.appendChild(statusCtx);
+                statusChart.appendChild(statusCtx);
 
-                    new Chart(statusCtx, {
-                        type: 'pie',
-                        data: {
-                            labels: ['Pending', 'In Progress', 'Resolved'],
-                            datasets: [{
-                                data: [pending, inProgress, resolved],
-                                backgroundColor: [
-                                    '#f39c12', '#3498db', '#2ecc71'
-                                ]
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false // Allow custom dimensions
-                        }
-                    });
-                }
+                new Chart(statusCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Pending', 'In Progress', 'Resolved'],
+                        datasets: [{
+                            data: [pending, inProgress, resolved],
+                            backgroundColor: [
+                                '#f39c12', '#3498db', '#2ecc71'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false // Allow custom dimensions
+                    }
+                });
             }
-        })
-        .catch(error => console.error('Error updating reports:', error));
+        }
+    })
+    .catch(error => console.error('Error updating reports:', error));
 }
 
 // Load complaints from backend
@@ -308,7 +310,8 @@ function loadComplaints() {
     }
 
     fetch('http://localhost:5000/api/admin/complaints', {
-        credentials: 'include', // Include cookies in the request
+        method: 'GET',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json'
         }
@@ -349,7 +352,7 @@ function displayComplaints(complaints) {
 
     tableBody.innerHTML = '';
 
-    if (complaints.length === 0) {
+    if (!complaints || complaints.length === 0) {
         const noComplaintsDiv = document.getElementById('no-complaints');
         if (noComplaintsDiv) {
             noComplaintsDiv.style.display = 'flex';
@@ -394,44 +397,48 @@ function displayComplaints(complaints) {
 // Display complaint details in modal
 function viewComplaintDetails(complaintId) {
     // Find complaint in current data
-    fetch(`http://localhost:5000/api/admin/complaints`,{
-        credentials: 'include', // Include cookies in the request
+    fetch(`http://localhost:5000/api/admin/complaints`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const complaint = data.complaints.find(c => c.id == complaintId);
-                if (!complaint) return;
-                
-                // Set modal content
-                document.getElementById('modal-ticket').textContent = complaint.ticket_number;
-                document.getElementById('modal-status').textContent = complaint.status;
-                document.getElementById('modal-status').className = `complaint-status status-${complaint.status.toLowerCase().replace(' ', '-')}`;
-                document.getElementById('modal-user').textContent = complaint.user_name;
-                document.getElementById('modal-email').textContent = complaint.user_email;
-                document.getElementById('modal-department').textContent = complaint.department;
-                document.getElementById('modal-date').textContent = new Date(complaint.created_at).toLocaleDateString();
-                document.getElementById('modal-description').textContent = complaint.description;
-                
-                // Set selected status in dropdown
-                const statusSelect = document.getElementById('update-status-select');
-                if (statusSelect) {
-                    for (let i = 0; i < statusSelect.options.length; i++) {
-                        if (statusSelect.options[i].value === complaint.status) {
-                            statusSelect.selectedIndex = i;
-                            break;
-                        }
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const complaint = data.complaints.find(c => c.id == complaintId);
+            if (!complaint) return;
+            
+            // Set modal content
+            document.getElementById('modal-ticket').textContent = complaint.ticket_number;
+            document.getElementById('modal-status').textContent = complaint.status;
+            document.getElementById('modal-status').className = `complaint-status status-${complaint.status.toLowerCase().replace(' ', '-')}`;
+            document.getElementById('modal-user').textContent = complaint.user_name;
+            document.getElementById('modal-email').textContent = complaint.user_email;
+            document.getElementById('modal-department').textContent = complaint.department;
+            document.getElementById('modal-date').textContent = new Date(complaint.created_at).toLocaleDateString();
+            document.getElementById('modal-description').textContent = complaint.description;
+            
+            // Set selected status in dropdown
+            const statusSelect = document.getElementById('update-status-select');
+            if (statusSelect) {
+                for (let i = 0; i < statusSelect.options.length; i++) {
+                    if (statusSelect.options[i].value === complaint.status) {
+                        statusSelect.selectedIndex = i;
+                        break;
                     }
                 }
-                
-                // Store complaint ID for update
-                document.getElementById('update-status-btn').setAttribute('data-complaint-id', complaint.id);
-                
-                // Show modal
-                document.getElementById('complaint-modal').style.display = 'block';
             }
-        })
-        .catch(error => console.error('Error:', error));
+            
+            // Store complaint ID for update
+            document.getElementById('update-status-btn').setAttribute('data-complaint-id', complaint.id);
+            
+            // Show modal
+            document.getElementById('complaint-modal').style.display = 'block';
+        }
+    })
+    .catch(error => console.error('Error:', error));
 }
 
 // Update complaint status
@@ -468,66 +475,114 @@ function updateComplaintStatus(complaintId, newStatus) {
 }
 
 // Filter complaints by department
-function filterComplaintsByDepartment(department) {
-    fetch(`http://localhost:5000/api/admin/complaints?department_id=${department}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                displayComplaints(data.complaints);
-            } else {
-                console.error('Failed to filter complaints:', data.message);
+function filterComplaintsByDepartment(departmentId) {
+    console.log("Filtering by department:", departmentId);
+    
+    const url = new URL('http://localhost:5000/api/admin/complaints');
+    if (departmentId && departmentId !== "0") {
+        url.searchParams.append('department_id', departmentId);
+    }
+    
+    fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("Filter response:", data);
+        if (data.success) {
+            displayComplaints(data.complaints);
+        } else {
+            console.error('Failed to filter complaints:', data.message);
+            const tableBody = document.getElementById('complaints-list');
+            if (tableBody) {
+                tableBody.innerHTML = `<tr><td colspan="6">Error: ${data.message}</td></tr>`;
             }
-        })
-        .catch(error => {
-            console.error('Error filtering complaints:', error);
-        });
+        }
+    })
+    .catch(error => {
+        console.error('Error filtering complaints:', error);
+        const tableBody = document.getElementById('complaints-list');
+        if (tableBody) {
+            tableBody.innerHTML = `<tr><td colspan="6">Error connecting to server</td></tr>`;
+        }
+    });
 }
 
 // Filter complaints by status
 function filterComplaintsByStatus(status) {
-    fetch(`http://localhost:5000/api/admin/complaints?status=${status}`,{
-        credentials: 'include', // Include cookies in the request
+    const url = new URL('http://localhost:5000/api/admin/complaints');
+    if (status) {
+        url.searchParams.append('status', status);
+    }
+    
+    fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                displayComplaints(data.complaints);
-            } else {
-                console.error('Failed to filter complaints:', data.message);
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayComplaints(data.complaints);
+        } else {
+            console.error('Failed to filter complaints:', data.message);
+            const tableBody = document.getElementById('complaints-list');
+            if (tableBody) {
+                tableBody.innerHTML = `<tr><td colspan="6">Error: ${data.message}</td></tr>`;
             }
-        })
-        .catch(error => {
-            console.error('Error filtering complaints:', error);
-        });
+        }
+    })
+    .catch(error => {
+        console.error('Error filtering complaints:', error);
+        const tableBody = document.getElementById('complaints-list');
+        if (tableBody) {
+            tableBody.innerHTML = `<tr><td colspan="6">Error connecting to server</td></tr>`;
+        }
+    });
 }
 
 // Search complaints
 function searchComplaints(searchTerm) {
-    fetch('http://localhost:5000/api/admin/complaints',{
-        credentials: 'include', // Include cookies in the request
+    fetch('http://localhost:5000/api/admin/complaints', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                if (!searchTerm) {
-                    displayComplaints(data.complaints);
-                    return;
-                }
-                
-                searchTerm = searchTerm.toLowerCase();
-                const filteredComplaints = data.complaints.filter(complaint => 
-                    complaint.ticket_number.toLowerCase().includes(searchTerm) ||
-                    complaint.department.toLowerCase().includes(searchTerm) ||
-                    complaint.user_name.toLowerCase().includes(searchTerm) ||
-                    complaint.description.toLowerCase().includes(searchTerm)
-                );
-                
-                displayComplaints(filteredComplaints);
-            } else {
-                console.error('Failed to load complaints:', data.message);
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (!searchTerm) {
+                displayComplaints(data.complaints);
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error loading complaints:', error);
-        });
+            
+            searchTerm = searchTerm.toLowerCase();
+            const filteredComplaints = data.complaints.filter(complaint => 
+                complaint.ticket_number.toLowerCase().includes(searchTerm) ||
+                complaint.department.toLowerCase().includes(searchTerm) ||
+                complaint.user_name.toLowerCase().includes(searchTerm) ||
+                complaint.description.toLowerCase().includes(searchTerm)
+            );
+            
+            displayComplaints(filteredComplaints);
+        } else {
+            console.error('Failed to load complaints:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading complaints:', error);
+    });
 }

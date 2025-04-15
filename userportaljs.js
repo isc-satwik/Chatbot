@@ -31,17 +31,46 @@ document.addEventListener('DOMContentLoaded', function () {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function handleUserInput() {
+    async function handleUserInput() {
         const message = userInput.value.trim();
         if (message) {
-            addMessage(message, true);
+            // Hide the previous submission result when user starts typing
+            document.getElementById('submission-result').style.display = 'none';
+            
+            addMessage(message, true); // Add user message to chat
             userInput.value = '';
 
-            setTimeout(() => {
-                addMessage("Thank you for sharing your grievance. Please fill out the form below.");
-                complaintForm.style.display = 'block';
-                document.getElementById('complaint').value = message;
-            }, 1000);
+            try {
+                // Send the user's message to the backend
+                const response = await fetch('http://127.0.0.1:5000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.type === 'greeting') {
+                        addMessage(result.reply);
+                    } else if (result.type === 'complaint') {
+                        addMessage(result.reply);
+                        document.getElementById('complaint-form').style.display = 'block';
+                        document.getElementById('complaint').value = message;
+                    } else if (result.type === 'rejected') {
+                        addMessage(result.reply);
+                    } else if (result.type === 'irrelevant') {
+                        addMessage(result.reply);
+                    }
+                } else {
+                    addMessage("Sorry, I couldn't process your request. Please try again.");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage("An error occurred while communicating with the server.");
+            }
         }
     }
 
@@ -77,7 +106,67 @@ document.addEventListener('DOMContentLoaded', function () {
     const ticketNumberElem = document.getElementById('ticket-number');
     const assignedDeptElem = document.getElementById('assigned-department');
 
-    submitBtn.addEventListener('click', async () => {
+    async function submitComplaint() {
+    
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const complaint = document.getElementById('complaint').value.trim();
+
+        if (!name || !email || !complaint) {
+            alert('Please fill all required fields');
+            return;
+        }
+
+        let imageData = null;
+        if (imageUpload.files[0]) {
+            const reader = new FileReader();
+            imageData = await new Promise(resolve => {
+                reader.onload = e => resolve(e.target.result);
+                reader.readAsDataURL(imageUpload.files[0]);
+            });
+        }
+
+        const data = { name, email, phone, complaint, image: imageData };
+
+        try {
+            const response = await fetch("http://127.0.0.1:5000/api/submit_complaint", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Update the ticket number and department in the UI
+                document.getElementById('ticket-number').textContent = result.ticket_number;
+                document.getElementById('assigned-department').textContent = result.department;
+                
+                // Hide the complaint form and show the success message
+                document.getElementById('complaint-form').style.display = 'none';
+                document.getElementById('submission-result').style.display = 'block';
+                
+                // Clear the form but keep the submission result visible
+                document.getElementById('name').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('phone').value = '';
+                document.getElementById('complaint').value = '';
+                document.getElementById('complaint-form').style.display = 'none';
+                imageUpload.value = '';
+                imagePreview.innerHTML = '';
+            } else {
+                alert(result.message || 'Failed to submit complaint');
+            }
+        } catch (error) {
+            console.error('Error submitting complaint:', error);
+            alert('An error occurred while submitting the complaint.');
+            document.getElementById('complaint-form').style.display = 'none';
+        }
+    }
+
+    submitBtn.addEventListener('click', async (event) => {
+        event.preventDefault();
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
         const phone = document.getElementById('phone').value.trim();
@@ -104,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const data = { name, email, phone, complaint, image: imageData };
 
+
         submitBtn.disabled = true;
         submitBtn.textContent = 'Submitting...';
 
@@ -118,11 +208,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const result = await response.json();
 
             if (result.success) {
+                console.log("success")
                 ticketNumberElem.textContent = result.ticket_number;
                 assignedDeptElem.textContent = result.department;
 
                 complaintForm.style.display = 'none';
                 submissionResult.style.display = 'block';
+
             } else {
                 alert(result.message || 'Failed to submit complaint');
             }
@@ -136,18 +228,34 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('new-complaint').addEventListener('click', () => {
-        submissionResult.style.display = 'none';
-
+        // Hide the submission result
+        document.getElementById('submission-result').style.display = 'none';
+        
+        // Clear the form
         document.getElementById('name').value = '';
         document.getElementById('email').value = '';
         document.getElementById('phone').value = '';
         document.getElementById('complaint').value = '';
         imageUpload.value = '';
         imagePreview.innerHTML = '';
-
-        complaintForm.style.display = 'none';
-
-        addMessage("Hello! I'm here to help. Please tell me about your issue.");
+        
+        // Show the chat interface
+        document.getElementById('complaint-form').style.display = 'none';
+        
+        // Reset the chat with a message that preserves the previous ticket info
+        const chatMessages = document.getElementById('chat-messages');
+        const previousTicket = document.getElementById('ticket-number').textContent;
+        const previousDepartment = document.getElementById('assigned-department').textContent;
+        
+        chatMessages.innerHTML = `
+            <div class="message bot">
+                Your previous complaint (Ticket: ${previousTicket}, Department: ${previousDepartment}) has been submitted successfully.
+                <br><br>
+                How can I help you with your next grievance?
+            </div>
+        `;
+        
+        // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
