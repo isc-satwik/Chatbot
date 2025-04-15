@@ -93,8 +93,23 @@ document.addEventListener('DOMContentLoaded', function () {
             reader.onload = function (e) {
                 const img = document.createElement('img');
                 img.src = e.target.result;
-                imagePreview.innerHTML = '';
-                imagePreview.appendChild(img);
+
+                // Check for GPS metadata
+                EXIF.getData(img, function () {
+                    const gpsLatitude = EXIF.getTag(this, 'GPSLatitude');
+                    const gpsLongitude = EXIF.getTag(this, 'GPSLongitude');
+
+                    if (!gpsLatitude || !gpsLongitude) {
+                        alert('Please upload a photo taken with a GPS-enabled camera.');
+                        imageUpload.value = ''; // Clear the file input
+                        imagePreview.innerHTML = ''; // Clear the preview
+                        return;
+                    }
+
+                    // If GPS metadata is present, show the preview
+                    imagePreview.innerHTML = '';
+                    imagePreview.appendChild(img);
+                });
             };
             reader.readAsDataURL(file);
         }
@@ -106,74 +121,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const ticketNumberElem = document.getElementById('ticket-number');
     const assignedDeptElem = document.getElementById('assigned-department');
 
-    async function submitComplaint() {
-    
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const phone = document.getElementById('phone').value.trim();
-        const complaint = document.getElementById('complaint').value.trim();
-
-        if (!name || !email || !complaint) {
-            alert('Please fill all required fields');
-            return;
-        }
-
-        let imageData = null;
-        if (imageUpload.files[0]) {
-            const reader = new FileReader();
-            imageData = await new Promise(resolve => {
-                reader.onload = e => resolve(e.target.result);
-                reader.readAsDataURL(imageUpload.files[0]);
-            });
-        }
-
-        const data = { name, email, phone, complaint, image: imageData };
-
-        try {
-            const response = await fetch("http://127.0.0.1:5000/api/submit_complaint", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                // Update the ticket number and department in the UI
-                document.getElementById('ticket-number').textContent = result.ticket_number;
-                document.getElementById('assigned-department').textContent = result.department;
-                
-                // Hide the complaint form and show the success message
-                document.getElementById('complaint-form').style.display = 'none';
-                document.getElementById('submission-result').style.display = 'block';
-                
-                // Clear the form but keep the submission result visible
-                document.getElementById('name').value = '';
-                document.getElementById('email').value = '';
-                document.getElementById('phone').value = '';
-                document.getElementById('complaint').value = '';
-                document.getElementById('complaint-form').style.display = 'none';
-                imageUpload.value = '';
-                imagePreview.innerHTML = '';
-            } else {
-                alert(result.message || 'Failed to submit complaint');
-            }
-        } catch (error) {
-            console.error('Error submitting complaint:', error);
-            alert('An error occurred while submitting the complaint.');
-            document.getElementById('complaint-form').style.display = 'none';
-        }
-    }
-
     submitBtn.addEventListener('click', async (event) => {
         event.preventDefault();
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
         const phone = document.getElementById('phone').value.trim();
         const complaint = document.getElementById('complaint').value.trim();
+        const address = document.getElementById('address').value.trim();
 
-        if (!name || !email || !complaint) {
-            alert('Please fill all required fields');
+        if (!name || !email || !complaint || !address) {
+            alert('Please fill all required fields, including the address.');
             return;
         }
 
@@ -191,7 +148,15 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        const data = { name, email, phone, complaint, image: imageData };
+        const data = {
+            user_id: sessionStorage.getItem('user_id'), // Retrieve user_id from session storage
+            name,
+            email,
+            phone,
+            complaint,
+            address,
+            image: imageData
+        };
 
 
         submitBtn.disabled = true;
