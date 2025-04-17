@@ -50,7 +50,7 @@ db_config = {
 }
 
 # OpenAI Configuration
-genai.configure(api_key="AIzaSyBdKeckdj2w7tFj2Ue53N8XNJRW2RhhvqY")
+# genai.configure(api_key="AIzaSyBdKeckdj2w7tFj2Ue53N8XNJRW2RhhvqY")
 
 # Load CLIP model for image verification
 device = "cuda" if torch.cuda.is_available() else "cpu"

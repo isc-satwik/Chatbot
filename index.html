@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grievance Redressal Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Grievance Redressal Chatbot</h1>
+        
+        <div class="chat-interface">
+            <div id="chatContainer" class="chat-container"></div>
+            <div class="input-group">
+                <input type="text" id="messageInput" placeholder="Type your message here...">
+                <button id="sendButton">Send</button>
+            </div>
+        </div>
+
+        <div id="imageUploadContainer" style="display: none;">
+            <div class="form-group">
+                <label>Upload Image*</label>
+                <p id="imageUploadMessage" style="color: #ff6b6b; margin-bottom: 10px;"></p>
+                <input type="file" id="image" accept="image/*" style="display: none;" onchange="handleImageSelected(event)">
+                <button type="button" onclick="handleImageUpload()" class="upload-btn">Choose Image</button>
+                <img id="imagePreview" style="max-width: 200px; margin-top: 10px; display: none;">
+            </div>
+        </div>
+    </div>
+    <script src="frontend.js"></script>
+</body>
+</html> 
